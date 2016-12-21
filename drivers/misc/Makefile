@@ -70,3 +70,9 @@ obj-$(CONFIG_USB_EXT_TYPE_C_PERICOM)	+= type-c-pericom.o
 obj-$(CONFIG_USB_EXT_TYPE_C_TI)		+= type-c-ti.o
 obj-$(CONFIG_QPNP_MISC) 	+= qpnp-misc.o
 obj-$(CONFIG_MEMORY_STATE_TIME) += memory_state_time.o
+
+# HTC Additions
+obj-$(CONFIG_FPR_FPC)		+= fpr_FingerprintCard/
+obj-$(CONFIG_HTC_FLASHLIGHT)	+= htc_flashlight.o
+obj-$(CONFIG_RT_REGMAP)		+= rt-regmap.o
+obj-$(CONFIG_VIB_TRIGGERS)	+= vib-triggers.o
