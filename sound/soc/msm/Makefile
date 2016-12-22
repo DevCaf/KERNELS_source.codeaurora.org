@@ -33,6 +33,16 @@ obj-$(CONFIG_SND_SOC_MSM8X16) += snd-soc-msm8x16.o
 snd-soc-mdm9650-objs := mdm9650.o mdm9650-auto.o
 obj-$(CONFIG_SND_SOC_MDM9650) += snd-soc-mdm9650.o
 
+#HTC_AUD_START
+obj-$(CONFIG_I2C_RT5503) += rt5503-i2c.o rt5503-pdev.o rt5503-regmap.o
+
+obj-$(CONFIG_SND_SOC_MSM8996) += htc_acoustic_alsa.o
+#HTC_AUD_END
+
+# for MDM Californium sound card driver
+snd-soc-mdmcalifornium-objs := mdmcalifornium.o
+obj-$(CONFIG_SND_SOC_MDMCALIFORNIUM) += snd-soc-mdmcalifornium.o
+
 # for MDM 9607 sound card driver
 snd-soc-mdm9607-objs := mdm9607.o
 obj-$(CONFIG_SND_SOC_MDM9607) += snd-soc-mdm9607.o

@@ -196,6 +196,33 @@ config SND_SOC_MSM8X16
 config SND_SOC_MDM9650
         tristate "SoC Machine driver for MDM9650 or SDXHEDGEHOG boards"
         depends on ARCH_MDM9650 || ARCH_SDXHEDGEHOG
+
+#HTC_AUD_START
+config SND_SOC_TFA98XX
+	bool "TFA NXP SPK Amp support"
+	depends on I2C
+	default n
+
+config I2C_RT5503
+	bool "RT5503 SPK Amp support"
+	depends on I2C
+	select RT_REGMAP
+	default n
+	help
+	  Say Y to enable RT5503 SPK Amp support.
+
+config USE_CODEC_MBHC
+	bool "MBHC support"
+	depends on ARCH_MSM8996
+	select SND_SOC_WCD9335
+	default n
+	help
+	  Say Y to enable MBHC support.
+#HTC_AUD_END
+
+config SND_SOC_MDMCALIFORNIUM
+        tristate "SoC Machine driver for MDMCALIFORNIUM boards"
+        depends on ARCH_MDMCALIFORNIUM
         select SND_SOC_QDSP6V2
         select SND_SOC_MSM_STUB
         select SND_SOC_MSM_HOSTLESS_PCM
