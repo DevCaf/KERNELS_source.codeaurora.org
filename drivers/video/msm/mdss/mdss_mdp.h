@@ -56,6 +56,7 @@
 #define C0_G_Y		0	/* G/luma */
 
 /* wait for at most 2 vsync for lowest refresh rate (24hz) */
+/* wait for 1 second for unexpected irq missing */
 #define KOFF_TIMEOUT_MS 84
 #define KOFF_TIMEOUT msecs_to_jiffies(KOFF_TIMEOUT_MS)
 
@@ -643,6 +644,7 @@ struct mdss_mdp_ctl {
 	/* vsync handler for FRC */
 	struct mdss_mdp_vsync_handler frc_vsync_handler;
 	
+	/* HTC: */
 	struct mutex event_lock;
 };
 

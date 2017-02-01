@@ -231,13 +231,16 @@
 #define PCIE20_DEVICE_CONTROL_STATUS	0x78
 #define PCIE20_DEVICE_CONTROL2_STATUS2 0x98
 
+/* HTC_WIFI_START */
+/* BRCM: correct the EP regs offset for 435x */
 #ifdef CONFIG_BCM4359
 #define PCIE20_L1SUB_CONTROL2    0x15C
 #define PCIE20_L1SUB_CONTROL2_BRCM      0x24C
 #define PCIE20_CAP_LINKCTRLSTATUS_BRCM      0xBC
 #define PCIE20_DEVICE_CONTROL2_STATUS2_BRCM 0xD4
 #define PCIE20_LTR_MAX_SNOOP_LATENCY_BRCM   0x1B4
-#endif 
+#endif /* CONFIG_BCM4359 */
+/* HTC_WIFI_END */
 
 #define PCIE20_AUX_CLK_FREQ_REG		0xB40
 #define PCIE20_ACK_F_ASPM_CTRL_REG     0x70C
@@ -395,11 +398,14 @@
 	pr_err("%s: " fmt, __func__, arg);  \
 	} while (0)
 
+/* HTC_WIFI_START */
+// ** [HPKB#28650] Reduce log size on non-debug ROM
 #ifdef HTC_DEBUG_FLAG
 #define PCIE_ERR_INTERNAL        PCIE_ERR
 #else
 #define PCIE_ERR_INTERNAL        PCIE_DBG
-#endif 
+#endif /* HTC_DEBUG_FLAG */
+/* HTC_WIFI_END */
 
 
 enum msm_pcie_res {
@@ -504,6 +510,7 @@ struct msm_pcie_irq_info_t {
 	uint32_t	    num;
 };
 
+/* PCIe device info structure */
 struct msm_pcie_device_info {
 	u32			bdf;
 	struct pci_dev		*dev;
@@ -638,8 +645,12 @@ static int msm_pcie_debug_mask;
 module_param_named(debug_mask, msm_pcie_debug_mask,
 			    int, S_IRUGO | S_IWUSR | S_IWGRP);
 
+/* HTC_WIFI_START */
+/* Limit log flooding */
 static int logger_cnt;
+/* HTC_WIFI_END */
 
+/* debugfs values */
 static u32 rc_sel;
 static u32 base_sel;
 static u32 wr_offset;
@@ -1457,11 +1468,11 @@ static void pcie_phy_init(struct msm_pcie_dev_t *dev)
 		msm_pcie_write_reg(dev->phy, PCIE_COM_START_CONTROL, 0x03);
 	}
 
-	
-	
+	/* HTC_WIFI_START */
+	// ** modify for eye diagram.
 	writel_relaxed(0x151D20, dev->parf + PCIE20_PARF_PCS_DEEMPH);
 	writel_relaxed(0x7C79, dev->parf + PCIE20_PARF_PCS_SWING);
-	
+	/* HTC_WIFI_END */
 
 }
 
@@ -2898,17 +2909,17 @@ static inline int msm_pcie_oper_conf(struct pci_bus *bus, u32 devfn, int oper,
 
 	/* check if the link is up for endpoint */
 	if (!rc && !msm_pcie_is_link_up(dev)) {
-		
+		/* HTC_WIFI_START */
 		if (logger_cnt < 5) {
 			logger_cnt++ ;
-		
+		/* HTC_WIFI_END */
 		PCIE_ERR(dev,
 			"PCIe: RC%d %s fail, link down - bus %d devfn %d\n",
 				rc_idx, (oper == RD) ? "rd" : "wr",
 				bus->number, devfn);
-		
+		/* HTC_WIFI_START */
 		}
-		
+		/* HTC_WIFI_END */
 			*val = ~0;
 			rv = PCIBIOS_DEVICE_NOT_FOUND;
 			goto unlock;
@@ -3400,7 +3411,7 @@ static void msm_pcie_config_controller(struct msm_pcie_dev_t *dev)
 	else
 		msm_pcie_write_reg(dev->dm_core, PCIE20_AUX_CLK_FREQ_REG, 0x01);
 
-	
+	/* Enable AER on RC */
 	msm_pcie_write_mask(dev->dm_core + PCIE20_BRIDGE_CTRL, 0,
 					BIT(16)|BIT(17));
 	msm_pcie_write_mask(dev->dm_core +  PCIE20_CAP_DEVCTRLSTATUS, 0,
@@ -3431,11 +3442,13 @@ static void msm_pcie_config_controller(struct msm_pcie_dev_t *dev)
 	}
 }
 
+/* HTC_WIFI_START */
 #if 0
 static void msm_pcie_config_link_state(struct msm_pcie_dev_t *dev)
 #else
 static int msm_pcie_config_link_state(struct msm_pcie_dev_t *dev)
 #endif
+/* HTC_WIFI_END */
 {
 	u32 val;
 	u32 current_offset;
@@ -3445,13 +3458,15 @@ static int msm_pcie_config_link_state(struct msm_pcie_dev_t *dev)
 	u32 ep_link_ctrlstts_offset = 0;
 	u32 ep_dev_ctrl2stts2_offset = 0;
 
+/* HTC_WIFI_START */
 #ifdef CONFIG_BCM4359
 	u32 ep_l1sub_ctrl2_offset = 0x24c;
 	u32 tpoweron = 0;
 	u32 ltrlatency = 0;
 #endif
+/* HTC_WIFI_END */
 
-	
+	/* Enable the AUX Clock and the Core Clk to be synchronous for L1SS*/
 	if (!dev->aux_clk_sync && dev->l1ss_supported)
 		msm_pcie_write_mask(dev->parf +
 				PCIE20_PARF_SYS_CTRL, BIT(3), 0);
@@ -3460,13 +3475,13 @@ static int msm_pcie_config_link_state(struct msm_pcie_dev_t *dev)
 
 	while (current_offset) {
 		if (msm_pcie_check_align(dev, current_offset))
-			
+			/* HTC_WIFI_START */
 #if 0
 			return;
 #else
 			return MSM_PCIE_ERROR;
 #endif
-			
+			/* HTC_WIFI_END */
 
 		val = readl_relaxed(dev->conf + current_offset);
 		if ((val & 0xff) == PCIE20_CAP_ID) {
@@ -3482,13 +3497,13 @@ static int msm_pcie_config_link_state(struct msm_pcie_dev_t *dev)
 		PCIE_DBG(dev,
 			"RC%d endpoint does not support PCIe capability registers\n",
 			dev->rc_idx);
-		
+		/* HTC_WIFI_START */
 #if 0
 		return;
 #else
 		return MSM_PCIE_ERROR;
 #endif
-		
+		/* HTC_WIFI_END */
 	} else {
 		PCIE_DBG(dev,
 			"RC%d: ep_link_cap_offset: 0x%x\n",
@@ -3580,21 +3595,23 @@ static int msm_pcie_config_link_state(struct msm_pcie_dev_t *dev)
 		current_offset = PCIE_EXT_CAP_OFFSET;
 		while (current_offset) {
 			if (msm_pcie_check_align(dev, current_offset))
-				
+				/* HTC_WIFI_START */
 #if 0
 				return;
 #else
 				return MSM_PCIE_ERROR;
 #endif
-				
+				/* HTC_WIFI_END */
 
 			val = readl_relaxed(dev->conf + current_offset);
 			if ((val & 0xffff) == L1SUB_CAP_ID) {
 				ep_l1sub_cap_reg1_offset = current_offset + 0x4;
 				ep_l1sub_ctrl1_offset = current_offset + 0x8;
+/* HTC_WIFI_START */
 #ifdef CONFIG_BCM4359
 				ep_l1sub_ctrl2_offset = current_offset + 0xc;
 #endif
+/* HTC_WIFI_END */
 				break;
 			}
 			current_offset = val >> 20;
@@ -3603,13 +3620,13 @@ static int msm_pcie_config_link_state(struct msm_pcie_dev_t *dev)
 			PCIE_DBG(dev,
 				"RC%d endpoint does not support l1ss registers\n",
 				dev->rc_idx);
-			
+			/* HTC_WIFI_START */
 #if 0
 			return;
 #else
 			return MSM_PCIE_ERROR;
 #endif
-			
+			/* HTC_WIFI_END */
 		}
 
 		val = readl_relaxed(dev->conf + ep_l1sub_cap_reg1_offset);
@@ -3617,73 +3634,76 @@ static int msm_pcie_config_link_state(struct msm_pcie_dev_t *dev)
 		PCIE_DBG2(dev, "EP's L1SUB_CAPABILITY_REG_1: 0x%x\n", val);
 		PCIE_DBG2(dev, "RC%d: ep_l1sub_ctrl1_offset: 0x%x\n",
 				dev->rc_idx, ep_l1sub_ctrl1_offset);
+/* HTC_WIFI_START */
 #ifdef CONFIG_BCM4359
 		PCIE_DBG2(dev, "RC%d: ep_l1sub_ctrl2_offset: 0x%x\n",
 				dev->rc_idx, ep_l1sub_ctrl2_offset);
 #endif
+/* HTC_WIFI_END */
 
 		val &= 0xf;
 
+/* HTC_WIFI_START */
 #ifdef CONFIG_BCM4359
 		if (dev->rc_idx == 0) {
-			
+			/* assign tpoweron to 120us */
 			tpoweron = BIT(6)|BIT(5)|BIT(0);
 			PCIE_DBG2(dev, "BCM4359: TPOWERON 120us, 0x%x\n", tpoweron);
 
-			
+			/* assign L12THRESHOLD to 164us */
 			val |= BIT(30)|BIT(23)|BIT(21)|BIT(3)|BIT(2)|BIT(1)|BIT(0);
 			PCIE_DBG2(dev, "BCM4359: L12THRESHOLD 0us, 0x%x\n", val);
 
-			
+			/* assign LTR latency to 3ms */
 			ltrlatency = BIT(28)|BIT(17)|BIT(16)|BIT(12)|BIT(1)|BIT(0);
 			PCIE_DBG2(dev, "BCM4359: LTR_LATENCY 3ms, 0x%x\n", ltrlatency);
 
-			
-			
+			/* Clear bits at first */
+			/* EP: disable ASPM(0xbc) */
 			msm_pcie_write_mask(dev->conf + PCIE20_CAP_LINKCTRLSTATUS_BRCM,
 				BIT(1)|BIT(0), 0);
-			
+			/* EP: disable L1SS */
 			msm_pcie_write_mask(dev->conf + ep_l1sub_ctrl1_offset,
 				BIT(3)|BIT(2)|BIT(1)|BIT(0), 0);
-			
+			/* RC: disable ASPM  */
 			msm_pcie_write_mask(dev->dm_core + PCIE20_CAP_LINKCTRLSTATUS,
 				BIT(1)|BIT(0), 0);
-			
+			/* RC: disable L1SS */
 			msm_pcie_write_mask(dev->dm_core + PCIE20_L1SUB_CONTROL1,
 				BIT(3)|BIT(2)|BIT(1)|BIT(0), 0);
 
-			
+			/* RC: TPOWERON : 120us */
 			msm_pcie_write_mask(dev->dm_core +
 					PCIE20_L1SUB_CONTROL2,
 					0xff, tpoweron);
 
-			
+			/* EP: TPOWERON : 120us */
 			msm_pcie_write_mask(dev->conf + ep_l1sub_ctrl2_offset,
 					0xff, tpoweron);
 
-			
+			/* RC: Enable L1.1/L1.2 and set L12THRESHOLD : 0us */
 			msm_pcie_write_mask(dev->dm_core + PCIE20_L1SUB_CONTROL1,
 						0, val);
 
-			
+			/* EP: Enable L1.1/L1.2 and set L12THRESHOLD : 0us */
 			msm_pcie_write_mask(dev->conf + ep_l1sub_ctrl1_offset,
 						0, val);
 
-			
-			
+			/* Set bits back. L1 only */
+			/* EP: Set ASPM(0xbc): supported ASPM L1 */
 			msm_pcie_write_mask(dev->conf + PCIE20_CAP_LINKCTRLSTATUS_BRCM, 0,
 				BIT(8)|BIT(6)|BIT(1));
-			
+			/* RC: Set ASPM and ComClkConfig(0x80): supported ASPM L1 */
 			msm_pcie_write_mask(dev->dm_core + PCIE20_CAP_LINKCTRLSTATUS, 0,
 				BIT(6)|BIT(1));
 
-			
+			/* EP: Set LTR Latency : 3ms */
 			msm_pcie_write_mask(dev->conf + PCIE20_LTR_MAX_SNOOP_LATENCY_BRCM, 0, ltrlatency);
 
-			
+			/* RC: LTR toggle */
 			msm_pcie_write_mask(dev->dm_core + PCIE20_DEVICE_CONTROL2_STATUS2, 0, BIT(10));
 
-			
+			/* EP: LTR toggle */
 			msm_pcie_write_mask(dev->conf + ep_dev_ctrl2stts2_offset, 0, BIT(10));
 
 			if (dev->shadow_en) {
@@ -3730,6 +3750,7 @@ static int msm_pcie_config_link_state(struct msm_pcie_dev_t *dev)
 
 		} else {
 #endif
+/* HTC_WIFI_END */
 
 		msm_pcie_write_reg_field(dev->dm_core, PCIE20_L1SUB_CONTROL1,
 					0xf, val);
@@ -3765,14 +3786,16 @@ static int msm_pcie_config_link_state(struct msm_pcie_dev_t *dev)
 			readl_relaxed(dev->conf +
 			ep_dev_ctrl2stts2_offset));
 
+/* HTC_WIFI_START */
 #ifdef CONFIG_BCM4359
 		}
 #endif
+/* HTC_WIFI_END */
 	}
 
-	
+	/* HTC_WIFI_START */
 	return 0;
-	
+	/* HTC_WIFI_END */
 }
 
 void msm_pcie_config_msi_controller(struct msm_pcie_dev_t *dev)
@@ -4092,14 +4115,14 @@ int msm_pcie_enable(struct msm_pcie_dev_t *dev, u32 options)
 	long int retries = 0;
 	int link_check_count = 0;
 
-	
-	
+	/* HTC_WIFI_START */
+	// ** [HPKB#28650] Reduce log size on non-debug ROM
 #if 0
 	PCIE_DBG(dev, "RC%d: entry\n", dev->rc_idx);
 #else
 	PCIE_ERR_INTERNAL(dev, "RC%d: entry\n", dev->rc_idx);
 #endif
-	
+	/* HTC_WIFI_END */
 
 	mutex_lock(&dev->setup_lock);
 
@@ -4111,8 +4134,8 @@ int msm_pcie_enable(struct msm_pcie_dev_t *dev, u32 options)
 
 	/* assert PCIe reset link to keep EP in reset */
 
-	
-	
+	/* HTC_WIFI_START */
+	// ** [HPKB#28650] Reduce log size on non-debug ROM
 #if 0
 	PCIE_INFO(dev, "PCIe: Assert the reset of endpoint of RC%d.\n",
 		dev->rc_idx);
@@ -4120,7 +4143,7 @@ int msm_pcie_enable(struct msm_pcie_dev_t *dev, u32 options)
 	PCIE_ERR_INTERNAL(dev, "PCIe: Assert the reset of endpoint of RC%d.\n",
 		dev->rc_idx);
 #endif
-	
+	/* HTC_WIFI_END */
 
 	gpio_set_value(dev->gpio[MSM_PCIE_GPIO_PERST].num,
 				dev->gpio[MSM_PCIE_GPIO_PERST].on);
@@ -4239,14 +4262,14 @@ int msm_pcie_enable(struct msm_pcie_dev_t *dev, u32 options)
 		dev->rc_idx, retries);
 
 	if (pcie_phy_is_ready(dev))
-		
-		
+		/* HTC_WIFI_START */
+		// ** [HPKB#28650] Reduce log size on non-debug ROM
 #if 0
 		PCIE_INFO(dev, "PCIe RC%d PHY is ready!\n", dev->rc_idx);
 #else
 		PCIE_ERR_INTERNAL(dev, "PCIe RC%d PHY is ready!\n", dev->rc_idx);
 #endif
-		
+		/* HTC_WIFI_END */
 	else {
 		PCIE_ERR(dev, "PCIe PHY RC%d failed to come up!\n",
 			dev->rc_idx);
@@ -4266,8 +4289,8 @@ int msm_pcie_enable(struct msm_pcie_dev_t *dev, u32 options)
 
 	/* de-assert PCIe reset link to bring EP out of reset */
 
-	
-	
+	/* HTC_WIFI_START */
+	// ** [HPKB#28650] Reduce log size on non-debug ROM
 #if 0
 	PCIE_INFO(dev, "PCIe: Release the reset of endpoint of RC%d.\n",
 		dev->rc_idx);
@@ -4275,7 +4298,7 @@ int msm_pcie_enable(struct msm_pcie_dev_t *dev, u32 options)
 	PCIE_ERR_INTERNAL(dev, "PCIe: Release the reset of endpoint of RC%d.\n",
 		dev->rc_idx);
 #endif
-	
+	/* HTC_WIFI_END */
 	gpio_set_value(dev->gpio[MSM_PCIE_GPIO_PERST].num,
 				1 - dev->gpio[MSM_PCIE_GPIO_PERST].on);
 	usleep_range(PERST_PROPAGATION_DELAY_US_MIN,
@@ -4302,18 +4325,18 @@ int msm_pcie_enable(struct msm_pcie_dev_t *dev, u32 options)
 		msm_pcie_confirm_linkup(dev, false, false, NULL)) {
 		PCIE_DBG(dev, "Link is up after %d checkings\n",
 			link_check_count);
-		
-		
+		/* HTC_WIFI_START */
+		// ** [HPKB#28650] Reduce log size on non-debug ROM
 #if 0
 		PCIE_INFO(dev, "PCIe RC%d link initialized\n", dev->rc_idx);
 #else
 		PCIE_ERR_INTERNAL(dev, "PCIe RC%d link initialized\n", dev->rc_idx);
 #endif
-		
+		/* HTC_WIFI_END */
 
-		
+		/* HTC_WIFI_START */
 		logger_cnt = 0;
-		
+		/* HTC_WIFI_END */
 
 	} else {
 		PCIE_INFO(dev, "PCIe: Assert the reset of endpoint of RC%d.\n",
@@ -4331,7 +4354,7 @@ int msm_pcie_enable(struct msm_pcie_dev_t *dev, u32 options)
 	if (!dev->msi_gicm_addr)
 		msm_pcie_config_msi_controller(dev);
 
-	
+	/* HTC_WIFI_START */
 #if 0
 	msm_pcie_config_link_state(dev);
 #else
@@ -4347,7 +4370,7 @@ int msm_pcie_enable(struct msm_pcie_dev_t *dev, u32 options)
 		goto link_fail;
 	}
 #endif
-	
+	/* HTC_WIFI_END */
 
 	dev->link_status = MSM_PCIE_LINK_ENABLED;
 	dev->power_on = true;
@@ -4389,14 +4412,14 @@ out:
 
 void msm_pcie_disable(struct msm_pcie_dev_t *dev, u32 options)
 {
-	
-	
+	/* HTC_WIFI_START */
+	// ** [HPKB#28650] Reduce log size on non-debug ROM
 #if 0
 	PCIE_DBG(dev, "RC%d: entry\n", dev->rc_idx);
 #else
 	PCIE_ERR_INTERNAL(dev, "RC%d: entry\n", dev->rc_idx);
 #endif
-	
+	/* HTC_WIFI_END */
 
 	mutex_lock(&dev->setup_lock);
 
@@ -4412,8 +4435,8 @@ void msm_pcie_disable(struct msm_pcie_dev_t *dev, u32 options)
 	dev->power_on = false;
 	dev->link_turned_off_counter++;
 
-	
-	
+	/* HTC_WIFI_START */
+	// ** [HPKB#28650] Reduce log size on non-debug ROM
 #if 0
 	PCIE_INFO(dev, "PCIe: Assert the reset of endpoint of RC%d.\n",
 		dev->rc_idx);
@@ -4421,7 +4444,7 @@ void msm_pcie_disable(struct msm_pcie_dev_t *dev, u32 options)
 	PCIE_ERR_INTERNAL(dev, "PCIe: Assert the reset of endpoint of RC%d.\n",
 		dev->rc_idx);
 #endif
-	
+	/* HTC_WIFI_END */
 
 	gpio_set_value(dev->gpio[MSM_PCIE_GPIO_PERST].num,
 				dev->gpio[MSM_PCIE_GPIO_PERST].on);
@@ -4974,7 +4997,7 @@ static irqreturn_t handle_aer_irq(int irq, void *data)
 	rc_dev_ctrlstts = readl_relaxed(dev->dm_core +
 				PCIE20_CAP_DEVCTRLSTATUS);
 
-	
+	/* HTC_WIFI_START */
 #if 0
 	if (uncorr_val)
 		PCIE_DBG(dev, "RC's PCIE20_AER_UNCORR_ERR_STATUS_REG:0x%x\n",
@@ -4990,7 +5013,7 @@ static irqreturn_t handle_aer_irq(int irq, void *data)
 		PCIE_ERR(dev, "RC's PCIE20_AER_CORR_ERR_STATUS_REG:0x%x\n",
 				corr_val);
 #endif
-	
+	/* HTC_WIFI_END */
 
 	if ((rc_dev_ctrlstts >> 18) & 0x1)
 		dev->rc_fatal_counter++;
@@ -5047,7 +5070,7 @@ static irqreturn_t handle_aer_irq(int irq, void *data)
 		ep_dev_ctrlstts = readl_relaxed(ep_base +
 					ep_dev_ctrlstts_offset);
 
-		
+		/* HTC_WIFI_START */
 #if 0
 		if (ep_uncorr_val)
 			PCIE_DBG(dev,
@@ -5068,7 +5091,7 @@ static irqreturn_t handle_aer_irq(int irq, void *data)
 				"EP's PCIE20_AER_CORR_ERR_STATUS_REG:0x%x\n",
 				ep_corr_val);
 #endif
-		
+		/* HTC_WIFI_END */
 
 		if ((ep_dev_ctrlstts >> 18) & 0x1)
 			dev->ep_fatal_counter++;
@@ -5182,6 +5205,7 @@ static irqreturn_t handle_linkdown_irq(int irq, void *data)
 		pcie_phy_dump(dev);
 		pcie_parf_dump(dev);
 
+		/* assert PERST */
 		gpio_set_value(dev->gpio[MSM_PCIE_GPIO_PERST].num,
 				dev->gpio[MSM_PCIE_GPIO_PERST].on);
 		PCIE_ERR(dev, "PCIe link is down for RC%d\n", dev->rc_idx);
@@ -6201,14 +6225,14 @@ static int msm_pcie_pm_suspend(struct pci_dev *dev,
 	unsigned long irqsave_flags;
 	struct msm_pcie_dev_t *pcie_dev = PCIE_BUS_PRIV_DATA(dev->bus);
 
-	
-	
+	/* HTC_WIFI_START */
+	// ** [HPKB#28650] Reduce log size on non-debug ROM
 #if 0
 	PCIE_DBG(pcie_dev, "RC%d: entry\n", pcie_dev->rc_idx);
 #else
 	PCIE_ERR_INTERNAL(pcie_dev, "RC%d: entry\n", pcie_dev->rc_idx);
 #endif
-	
+	/* HTC_WIFI_END */
 
 	spin_lock_irqsave(&pcie_dev->aer_lock, irqsave_flags);
 	pcie_dev->suspending = true;
@@ -6243,8 +6267,8 @@ static int msm_pcie_pm_suspend(struct pci_dev *dev,
 	msm_pcie_write_mask(pcie_dev->elbi + PCIE20_ELBI_SYS_CTRL, 0,
 				BIT(4));
 
-	
-	
+	/* HTC_WIFI_START */
+	// ** [HPKB#28650] Reduce log size on non-debug ROM
 #if 0
 	PCIE_DBG(pcie_dev, "RC%d: PME_TURNOFF_MSG is sent out\n",
 		pcie_dev->rc_idx);
@@ -6252,7 +6276,7 @@ static int msm_pcie_pm_suspend(struct pci_dev *dev,
 	PCIE_ERR_INTERNAL(pcie_dev, "RC%d: PME_TURNOFF_MSG is sent out\n",
 		pcie_dev->rc_idx);
 #endif
-	
+	/* HTC_WIFI_END */
 
 	ret_l23 = readl_poll_timeout((pcie_dev->parf
 		+ PCIE20_PARF_PM_STTS), val, (val & BIT(5)), 10000, 100000);
@@ -6262,7 +6286,7 @@ static int msm_pcie_pm_suspend(struct pci_dev *dev,
 		pcie_dev->rc_idx,
 		readl_relaxed(pcie_dev->parf + PCIE20_PARF_PM_STTS));
 
-	
+	/* HTC_WIFI_START */
 #if 0
 	if (!ret_l23)
 		PCIE_DBG(pcie_dev, "RC%d: PM_Enter_L23 is received\n",
@@ -6272,7 +6296,7 @@ static int msm_pcie_pm_suspend(struct pci_dev *dev,
 			pcie_dev->rc_idx);
 #else
 	if (!ret_l23) {
-		
+		// ** [HPKB#28650] Reduce log size on non-debug ROM
 		PCIE_ERR_INTERNAL(pcie_dev, "RC%d: PM_Enter_L23 is received\n",
 			pcie_dev->rc_idx);
 	} else {
@@ -6280,7 +6304,7 @@ static int msm_pcie_pm_suspend(struct pci_dev *dev,
 			pcie_dev->rc_idx);
 	}
 #endif
-	
+	/* HTC_WIFI_END */
 
 		msm_pcie_disable(pcie_dev, PM_PIPE_CLK | PM_CLK | PM_VREG);
 
@@ -6298,14 +6322,14 @@ static void msm_pcie_fixup_suspend(struct pci_dev *dev)
 	int ret;
 	struct msm_pcie_dev_t *pcie_dev = PCIE_BUS_PRIV_DATA(dev->bus);
 
-	
-	
+	/* HTC_WIFI_START */
+	// ** [HPKB#28650] Reduce log size on non-debug ROM
 #if 0
 	PCIE_DBG(pcie_dev, "RC%d\n", pcie_dev->rc_idx);
 #else
 	PCIE_ERR_INTERNAL(pcie_dev, "RC%d\n", pcie_dev->rc_idx);
 #endif
-	
+	/* HTC_WIFI_END */
 
 	if (pcie_dev->link_status != MSM_PCIE_LINK_ENABLED)
 		return;
@@ -6342,14 +6366,14 @@ static int msm_pcie_pm_resume(struct pci_dev *dev,
 	int ret;
 	struct msm_pcie_dev_t *pcie_dev = PCIE_BUS_PRIV_DATA(dev->bus);
 
-	
-	
+	/* HTC_WIFI_START */
+	// ** [HPKB#28650] Reduce log size on non-debug ROM
 #if 0
 	PCIE_DBG(pcie_dev, "RC%d: entry\n", pcie_dev->rc_idx);
 #else
 	PCIE_ERR_INTERNAL(pcie_dev, "RC%d: entry\n", pcie_dev->rc_idx);
 #endif
-	
+	/* HTC_WIFI_END */
 
 	if (pcie_dev->use_pinctrl && pcie_dev->pins_default)
 		pinctrl_select_state(pcie_dev->pinctrl,
@@ -6410,14 +6434,14 @@ void msm_pcie_fixup_resume(struct pci_dev *dev)
 	int ret;
 	struct msm_pcie_dev_t *pcie_dev = PCIE_BUS_PRIV_DATA(dev->bus);
 
-	
-	
+	/* HTC_WIFI_START */
+	// ** [HPKB#28650] Reduce log size on non-debug ROM
 #if 0
 	PCIE_DBG(pcie_dev, "RC%d\n", pcie_dev->rc_idx);
 #else
 	PCIE_ERR_INTERNAL(pcie_dev, "RC%d\n", pcie_dev->rc_idx);
 #endif
-	
+	/* HTC_WIFI_END */
 
 	if ((pcie_dev->link_status != MSM_PCIE_LINK_DISABLED) ||
 		pcie_dev->user_suspend)
@@ -6440,14 +6464,14 @@ void msm_pcie_fixup_resume_early(struct pci_dev *dev)
 	int ret;
 	struct msm_pcie_dev_t *pcie_dev = PCIE_BUS_PRIV_DATA(dev->bus);
 
-	
-	
+	/* HTC_WIFI_START */
+	// ** [HPKB#28650] Reduce log size on non-debug ROM
 #if 0
 	PCIE_DBG(pcie_dev, "RC%d\n", pcie_dev->rc_idx);
 #else
 	PCIE_ERR_INTERNAL(pcie_dev, "RC%d\n", pcie_dev->rc_idx);
 #endif
-	
+	/* HTC_WIFI_END */
 
 	if ((pcie_dev->link_status != MSM_PCIE_LINK_DISABLED) ||
 		pcie_dev->user_suspend)

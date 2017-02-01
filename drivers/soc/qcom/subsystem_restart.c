@@ -776,10 +776,10 @@ static void enable_all_irqs(struct subsys_device *dev)
 		irq_set_irq_wake(dev->desc->generic_irq, 1);
 	}
 
-#if 1 
+#if 1 //Modem_BSP++
         if (dev->desc->reboot_req_irq)
                 enable_irq(dev->desc->reboot_req_irq);
-#endif 
+#endif //Modem_BSP--
 }
 
 static void disable_all_irqs(struct subsys_device *dev)
@@ -800,10 +800,10 @@ static void disable_all_irqs(struct subsys_device *dev)
 		irq_set_irq_wake(dev->desc->generic_irq, 0);
 	}
 
-#if 1 
+#if 1 //Modem_BSP++
         if (dev->desc->reboot_req_irq)
                 disable_irq(dev->desc->reboot_req_irq);
-#endif 
+#endif //Modem_BSP--
 }
 
 static int wait_for_err_ready(struct subsys_device *subsys)
@@ -1738,12 +1738,12 @@ static int subsys_parse_devicetree(struct subsys_desc *desc)
 	if (ret && ret != -ENOENT)
 		return ret;
 
-#if 1 
+#if 1 //Modem_BSP++
 	ret = __get_irq(desc, "qcom,gpio-reboot-req", &desc->reboot_req_irq,
 							NULL);
 	if (ret && ret != -ENOENT)
 		return ret;
-#endif 
+#endif //Modem_BSP--
 
 	ret = __get_gpio(desc, "qcom,gpio-force-stop", &desc->force_stop_gpio);
 	if (ret && ret != -ENOENT)
@@ -1801,7 +1801,7 @@ static int subsys_setup_irqs(struct subsys_device *subsys)
 		disable_irq(desc->err_fatal_irq);
 	}
 
-#if 1 
+#if 1 //Modem_BSP++
 	if (desc->reboot_req_irq) {
 		ret = devm_request_irq(desc->dev, desc->reboot_req_irq,
 				desc->reboot_req_handler,
@@ -1813,7 +1813,7 @@ static int subsys_setup_irqs(struct subsys_device *subsys)
 		}
 		disable_irq(desc->reboot_req_irq);
 	}
-#endif 
+#endif //Modem_BSP--
 
 	if (desc->stop_ack_irq && desc->stop_ack_handler) {
 		ret = devm_request_irq(desc->dev, desc->stop_ack_irq,
@@ -1876,10 +1876,10 @@ static void subsys_free_irqs(struct subsys_device *subsys)
 	if (desc->err_fatal_irq && desc->err_fatal_handler)
 		devm_free_irq(desc->dev, desc->err_fatal_irq, desc);
 
-#if 1 
+#if 1 //Modem_BSP++
 	if (desc->reboot_req_irq)
 		devm_free_irq(desc->dev, desc->reboot_req_irq, desc);
-#endif 
+#endif //Modem_BSP--
 	
 	if (desc->stop_ack_irq && desc->stop_ack_handler)
 		devm_free_irq(desc->dev, desc->stop_ack_irq, desc);
